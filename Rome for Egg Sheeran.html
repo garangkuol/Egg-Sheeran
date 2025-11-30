@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Will you be my girlfriend?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --pink-1:#ffd6e8;
+      --pink-2:#ffb3d1;
+      --accent:#ff6fa3;
+      --glass: rgba(255,255,255,0.12);
+    }
+    html,body{height:100%;margin:0;font-family:Montserrat,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{
+      background: radial-gradient(circle at 20% 20%, var(--pink-1) 0%, transparent 15%),
+                  radial-gradient(circle at 80% 80%, var(--pink-2) 0%, transparent 12%),
+                  linear-gradient(180deg,#ffeef6 0%, #ffd2e6 50%, #ffecf5 100%);
+      overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+    }
+
+    /* floating layer */
+    .floating-area{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .float{
+      position:absolute;bottom:-120px;will-change:transform,opacity;opacity:0.95;pointer-events:none;
+      filter:drop-shadow(0 6px 12px rgba(0,0,0,0.06));
+      transform-origin:center;
+    }
+    @keyframes floatUp{
+      0%{transform:translateY(0) rotate(0deg);opacity:0}
+      10%{opacity:1}
+      50%{opacity:1}
+      100%{transform:translateY(-140vh) rotate(360deg);opacity:0}
+    }
+
+    /* heart shape via inline SVG styling fallback */
+    .float svg{width:100%;height:100%;display:block}
+
+    /* center card */
+    .card{
+      z-index:10;backdrop-filter: blur(6px) saturate(120%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.09));
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 10px 30px rgba(255,120,170,0.08);
+      border-radius:20px;padding:48px 36px;text-align:center;max-width:880px;width:min(94%,780px);
+      display:flex;flex-direction:column;align-items:center;gap:18px
+    }
+    h1{
+      font-family:'Great Vibes', cursive;font-size:64px;margin:0;color:#6b0034;text-shadow:0 2px 0 rgba(255,255,255,0.35);
+      letter-spacing:1px;line-height:1.02
+    }
+    p.lead{margin:0;color:#6b0034aa;font-size:18px}
+
+    .buttons{display:flex;gap:16px;margin-top:6px}
+    .btn{cursor:pointer;border:0;padding:12px 22px;border-radius:12px;font-weight:600;letter-spacing:0.2px}
+    .btn-yes{background:linear-gradient(135deg,var(--accent),#ff4f8a);color:white;box-shadow:0 8px 24px rgba(255,111,145,0.28)}
+    .btn-no{background:transparent;border:1px solid rgba(107,0,52,0.12);color:#6b0034}
+
+    /* subtle heart behind text */
+    .back-heart{position:absolute;z-index:1;opacity:0.06;transform:translate(-50%,-30%);}
+
+    /* playful shake */
+    @keyframes shake{0%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}100%{transform:translateX(0)}}
+    /* concrete class for shuffle effect */
+    .shake { animation: shake .6s ease; }
+
+    /* modal */
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.25));backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:all .25s ease}
+    .modal.open{opacity:1;pointer-events:auto}
+    .modal-card{background:white;padding:28px;border-radius:14px;max-width:480px;width:86%;text-align:center}
+
+    /* footer note */
+    .note{font-size:12px;color:#6b0034aa;margin-top:6px}
+
+    /* responsive */
+    @media (max-width:540px){h1{font-size:44px;padding:0 8px}}
+  </style>
+</head>
+<body>
+  <div class="floating-area" id="floatingArea" aria-hidden="true"></div>
+
+  <div class="card" role="main" aria-labelledby="proposalHeading">
+    <!-- decorative heart behind -->
+    <svg class="back-heart" width="520" height="520" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 21s-8-4.9-10-8.4C-0.4 7.9 4.7 3 8.5 5 10.6 6.3 12 9 12 9s1.4-2.7 3.5-4C19.3 3 24.4 7.9 22 12.6 20 16.1 12 21 12 21z" fill="#ff6fa3"/>
+    </svg>
+
+    <p class="lead">I've been carrying this question around for a while and it felt right to ask you with a little sparkle because you are a queen and deserve nothing but the best ✨</p>
+
+    <h1 id="proposalHeading">Will you be my girlfriend?</h1>
+
+   
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-card" id="modalCard">
+      <h2 style="font-family:'Great Vibes',cursive;margin:0 0 6px 0;">Yesss! 💗</h2>
+      <p style="margin:0 0 12px 0;color:#6b0034aa">You just made my day. Take a bow — and let’s celebrate together!</p>
+      <button class="btn btn-yes" id="closeModal">Hug ✨</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+
+      // Helper random
+      function rand(min,max){return Math.random()*(max-min)+min}
+
+      const floatingArea = document.getElementById('floatingArea');
+
+      // Embedded SVG templates (small and sweet)
+      const heartSVG = (size)=>`<svg viewBox="0 0 24 24" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s-8-4.9-10-8.4C-0.4 7.9 4.7 3 8.5 5 10.6 6.3 12 9 12 9s1.4-2.7 3.5-4C19.3 3 24.4 7.9 22 12.6 20 16.1 12 21 12 21z" fill="currentColor"/></svg>`;
+      const flowerSVG = (size)=>`<svg viewBox="0 0 24 24" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g fill="currentColor"><path d="M12 7a1 1 0 011-1h.01A3 3 0 0116 9a3 3 0 01-3 3 1 1 0 01-1-1V7z"/><path d="M7.05 9.05a3 3 0 011.414-1.414 1 1 0 01.707.294L7.05 9.05zM4 13a1 1 0 011-1h2a1 1 0 010 2H5a1 1 0 01-1-1zM16.95 14.95l2.121 2.121a1 1 0 01-1.414 1.414L15.536 16.364a1 1 0 11-1.414-1.414l2.828 2.828zM12 2a1 1 0 011 1v3a1 1 0 11-2 0V3a1 1 0 011-1z"/></g></svg>`;
+
+      // Create many floats
+      const total = 36;
+      for(let i=0;i<total;i++){
+        const el = document.createElement('div');
+        const isHeart = Math.random() > 0.45; // mix
+        const size = Math.floor(rand(18,72));
+        el.className = 'float';
+        el.style.left = (rand(2,98)) + '%';
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.transform = `translateY(${rand(0,30)}vh)`;
+        el.style.opacity = rand(0.7,1);
+        el.style.color = isHeart ? (rand(0,1)>0.5? '#ff4f8a':'#ff76b1') : (rand(0,1)>0.5? '#ffd24f':'#ff9fce');
+
+        const delay = rand(-18,6);
+        const duration = rand(10,26);
+        el.style.animation = `floatUp ${duration}s linear ${delay}s infinite`;
+        el.innerHTML = isHeart ? heartSVG(size) : flowerSVG(size);
+
+        // little interactivity: pop on click
+        el.addEventListener('click', ()=>{
+          // quick pop
+          el.style.transition = 'transform .18s ease';
+          el.style.transform = (el.style.transform || '') + ' scale(1.15)';
+          setTimeout(()=> {
+            // reset transform leaving translateY as-is (best effort)
+            el.style.transition = '';
+            el.style.transform = el.style.transform.replace(' scale(1.15)','');
+          }, 180);
+        });
+
+        floatingArea.appendChild(el);
+      }
+
+      // Buttons behaviour
+      const yesBtn = document.getElementById('yesBtn');
+      const noBtn = document.getElementById('noBtn');
+      const modal = document.getElementById('modal');
+      const closeModal = document.getElementById('closeModal');
+      const modalCard = document.getElementById('modalCard');
+
+      yesBtn.addEventListener('click', ()=>{
+        try {
+          modal.classList.add('open');
+          confettiBurst();
+        } catch(err) {
+          console.error('Error in yes handler:', err);
+        }
+      });
+
+      closeModal.addEventListener('click', ()=>{
+        modal.classList.remove('open');
+      });
+
+      noBtn.addEventListener('click', ()=>{
+        // dodge: set a short transition, move, then reset back
+        noBtn.style.transition = 'transform .18s ease';
+        const offset = (Math.random()>0.5? -22 : 22);
+        noBtn.style.transform = `translateX(${offset}px)`;
+
+        // reset after short delay so it can run again next click
+        setTimeout(()=>{
+          noBtn.style.transform = 'translateX(0)';
+          noBtn.style.transition = '';
+
+          // shake modalCard as a playful nudge (if present)
+          if(modalCard){
+            modalCard.classList.add('shake');
+            // ensure it's removed after animation
+            setTimeout(()=> modalCard.classList.remove('shake'), 700);
+          }
+        }, 220);
+      });
+
+      // Simple confetti made of small divs
+      function confettiBurst(){
+        const pieces = 48;
+        const colors = ['#ff6fa3','#ffd166','#ff9fce','#ffb3d1'];
+        for(let i=0;i<pieces;i++){
+          const p = document.createElement('div');
+          p.style.position='fixed';
+          p.style.left = (window.innerWidth/2 + rand(-90,90)) + 'px';
+          p.style.top = (window.innerHeight/2 + rand(-40,40)) + 'px';
+          const s = Math.floor(rand(6,12));
+          p.style.width = p.style.height = s + 'px';
+          p.style.background = colors[Math.floor(rand(0,colors.length))];
+          p.style.borderRadius='3px';
+          p.style.zIndex=9999; p.style.pointerEvents='none';
+          p.style.opacity='1';
+          p.style.transform = `translateY(0) rotate(${rand(0,360)}deg)`;
+          document.body.appendChild(p);
+          const toX = rand(-400,400); const toY = rand(-500,-80); const rot = rand(-720,720);
+          const anim = p.animate([
+            {transform:`translate(0,0) rotate(0deg)`, opacity:1},
+            {transform:`translate(${toX}px, ${toY}px) rotate(${rot}deg)`, opacity:0}
+          ],{duration:1200+Math.random()*800,easing:'cubic-bezier(.17,.67,.4,1)'});
+          anim.onfinish = ()=> {
+            if(p && p.parentNode) p.parentNode.removeChild(p);
+          };
+        }
+      }
+
+      // Accessibility: allow keyboard yes
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' || e.key === ' '){
+          yesBtn.focus();
+          yesBtn.click();
+        }
+        if(e.key === 'Escape'){
+          modal.classList.remove('open');
+        }
+      });
+
+      // small flourish: gently pulse the headline
+      const heading = document.querySelector('h1');
+      if(heading){
+        heading.animate([
+          {transform:'scale(1)'},
+          {transform:'scale(1.02)'},
+          {transform:'scale(1)'}
+        ],{duration:3500,iterations:Infinity});
+      }
+
+    }); // DOMContentLoaded
+  </script>
+</body>
+</html>
